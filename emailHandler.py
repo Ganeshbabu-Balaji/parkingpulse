@@ -39,6 +39,7 @@ with open(image_path, 'rb') as image_file:
     msg.attach(image)
 
 # sending the mail
+print("Sending Email....")
 s.sendmail("parkingpulseapp@gmail.com", "parkingpulseapp@gmail.com", msg.as_string())
 
 # terminating the session
