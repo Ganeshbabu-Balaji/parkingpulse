@@ -85,7 +85,7 @@ while cap.isOpened():
                             print("Starting Server")
 
                             # Authentication
-                            s.login("parkingpulseapp@gmail.com", "pslaydwoghpgbkrn")
+                            s.login("Sender Email", "App Password")
 
                             # Create a MIMEMultipart object
                             # for the message
@@ -116,7 +116,7 @@ while cap.isOpened():
 
                             # sending the mail
                             print("Sending Email....")
-                            s.sendmail("parkingpulseapp@gmail.com", "parkingpulseapp@gmail.com", msg.as_string())
+                            s.sendmail("Sender Email", "Reciever Mail", msg.as_string())
 
                             # terminating the session
                             s.quit()
