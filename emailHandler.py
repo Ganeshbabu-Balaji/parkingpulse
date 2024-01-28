@@ -22,7 +22,7 @@ msg['Subject'] = "Important: PACE Officer Detected"
 html_body = """
 <html>
   <body>
-    <p>A PACE officer has been detected near your vehicle.</p>
+    <p><b style="font-size: larger;">A PACE officer has been detected near your vehicle.</b></p>
     <img src="cid:carcopguy">
   </body>
 </html>
@@ -31,10 +31,10 @@ html_body = """
 msg.attach(MIMEText(html_body, 'html'))
 
 # Embed the image directly into the email body
-image_path = './carcopguy.jpeg'
+image_path = './carcopguy.gif'
 with open(image_path, 'rb') as image_file:
     image_data = image_file.read()
-    image = MIMEImage(image_data, name='carcopguy.jpeg')
+    image = MIMEImage(image_data, name='carcopguy.gif')
     image.add_header('Content-ID', '<carcopguy>')
     msg.attach(image)
 
