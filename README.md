@@ -26,7 +26,7 @@ python3 parkingpulse.py
 1. Open the `parkingpulse.py` file in your preferred text editor.
 3. Add your email credentials to the file. (2FA must be turned on in order to generate the app password)
 ```python
-s.login("Email", "app password")
+s.login("Sender Email", "App Password")
 ```
 ```python
 s.sendmail("Sender Email", "Reciever Email", msg.as_string())
