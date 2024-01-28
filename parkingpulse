@@ -1,0 +1,140 @@
+import cv2
+import pytesseract
+import smtplib
+import sys
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+
+# Path to the Tesseract executable
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
+# Load the video file
+cap = cv2.VideoCapture("C:/Users/vivek/Downloads/Untitled video - Made with Clipchamp (2).mp4")
+
+# Get the frame rate of the video
+frame_rate = cap.get(cv2.CAP_PROP_FPS)
+
+# Calculate the delay between each frame to achieve half speed
+delay = int(1000 / (2 * frame_rate))  # Delay in milliseconds
+
+while cap.isOpened():
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # Resize the frame to scale the video
+    scale_percent = 60  # Define the percentage scale you desire (here, 50%)
+    width = int(frame.shape[1] * scale_percent / 100)
+    height = int(frame.shape[0] * scale_percent / 100)
+    dim = (width, height)
+    resized_frame = cv2.resize(frame, dim, interpolation=cv2.INTER_AREA)
+
+    # Convert resized frame to grayscale
+    gray = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2GRAY)
+
+    # Apply Gaussian blur to reduce noise
+    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+
+    # Perform edge detection using Canny
+    edges = cv2.Canny(blurred, 50, 150)
+
+    # Perform morphological operations to close gaps and smooth edges
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    closed = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
+    cv2.imshow('gray', closed)
+
+    # Find contours in the closed image
+    contours, _ = cv2.findContours(closed.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Iterate through the contours
+    for contour in contours:
+        # Approximate the contour to a polygon
+        perimeter = cv2.arcLength(contour, True)
+        approx = cv2.approxPolyDP(contour, 0.02 * perimeter, True)
+
+        # If the contour has four vertices (likely a license plate)
+        if len(approx) >= 4:
+            x, y, w, h = cv2.boundingRect(approx)
+            aspect_ratio = w / h
+            if 4 <= aspect_ratio <= 6 and cv2.contourArea(contour) > 80:
+                cv2.rectangle(resized_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                # Extract the license plate region
+                license_plate = gray[y:y + h, x:x + w]
+
+                # Perform OCR on the license plate region
+                plate_text = pytesseract.image_to_string(license_plate, config='--psm 8')
+                plate_text = plate_text.replace(" ", "")
+                plate_text = plate_text.replace("\n", "")
+
+
+                test = "BG6S5USJ"
+
+                # Print the extracted text
+                if len(plate_text) >= 5:
+                    if all(char.isalnum() or char.isspace() for char in plate_text):
+                        print(plate_text)
+                        print(test)
+
+                        if plate_text == test:
+
+                            # create SMTP session
+                            s = smtplib.SMTP('smtp.gmail.com', 587)
+                            # start TLS for security
+                            s.starttls()
+                            print("Starting Server")
+
+                            # Authentication
+                            s.login("parkingpulseapp@gmail.com", "pslaydwoghpgbkrn")
+
+                            # Create a MIMEMultipart object
+                            # for the message
+                            msg = MIMEMultipart()
+
+                            # Add subject to the email
+                            msg['Subject'] = "Important: PACE Officer Detected"
+
+                            # Create the HTML body with an embedded image
+                            html_body = """
+                            <html>
+                              <body>
+                                <p><b style="font-size: larger;">A PACE officer has been detected near your vehicle.</b></p>
+                                <img src="cid:carcopguy">
+                              </body>
+                            </html>
+                            """
+
+                            msg.attach(MIMEText(html_body, 'html'))
+
+                            # Embed the image directly into the email body
+                            image_path = './carcopguy.gif'
+                            with open(image_path, 'rb') as image_file:
+                                image_data = image_file.read()
+                                image = MIMEImage(image_data, name='carcopguy.gif')
+                                image.add_header('Content-ID', '<carcopguy>')
+                                msg.attach(image)
+
+                            # sending the mail
+                            print("Sending Email....")
+                            s.sendmail("parkingpulseapp@gmail.com", "parkingpulseapp@gmail.com", msg.as_string())
+
+                            # terminating the session
+                            s.quit()
+                            print("Email Sent")
+
+                            # Quit Program when match is found
+                            cap.release()
+                            cv2.destroyAllWindows()
+                            sys.exit()  # Terminate the program
+                            break  # Exit the contours loop
+
+    # Display the resized frame
+    cv2.imshow('License Plate Detection', resized_frame)
+
+    # Delay between frames
+    if cv2.waitKey(delay) & 0xFF == ord('q'):
+        break
+
+# Release the capture and close all windows
+cap.release()
+cv2.destroyAllWindows()
